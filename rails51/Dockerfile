@@ -14,7 +14,8 @@ ENV RUBY_VERSION=2.4 \
     RAILS_ENV=production \
     NODE_ENV=production \
     INSTALL_PATH=/app \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    BUNDLE_SILENCE_ROOT_WARNING=1
 
 RUN echo 'APT::Install-Recommends 0;' >> /etc/apt/apt.conf.d/01norecommends \
  && echo 'APT::Install-Suggests 0;' >> /etc/apt/apt.conf.d/01norecommends \
@@ -44,14 +45,36 @@ RUN apt-get install -y \
     git-core \
     libpq5 \
     libpq-dev \
+    libev-dev \
+    libffi-dev \
+    libgdbm3 \
+    libssl-dev \
+    libyaml-dev \
+    procps \
+    zlib1g-dev \
     libreadline6 \
     libncurses5 \
     locales \
     nodejs \
     postgresql-client \
     ruby${RUBY_VERSION} \
+    ruby${RUBY_VERSION}-dev \
+    ruby-dev \
+    gcc \
+    make \
     yarn \
  && find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en' | xargs rm -r 
+
+
+
+# native gems
+# nokogiri 1.7.2
+# sqlite3
+# puma 3.8.2
+
+
+# ruby-nio4r 1.1.0
+
 
 # Prepare OS
 RUN update-locale LANG=C.UTF-8 LC_MESSAGES=POSIX \
@@ -69,8 +92,10 @@ RUN bundle install --binstubs --without development test
 
 COPY . .
 
+RUN yarn install --pure-lockfile
+
 # Precompile with dummy values in valid syntax
-RUN RUN bundle exec rake RAILS_ENV=production DATABASE_URL=postgresql://user:pass@127.0.0.1/dbname ACTION_CABLE_ALLOWED_REQUEST_ORIGINS=foo,bar SECRET_TOKEN=dummytoken assets:precompile
+RUN bundle exec rake RAILS_ENV=production DATABASE_URL=postgresql://user:pass@127.0.0.1/dbname ACTION_CABLE_ALLOWED_REQUEST_ORIGINS=foo,bar SECRET_TOKEN=dummytoken assets:precompile
 
 EXPOSE 3000/tcp
 
